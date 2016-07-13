@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+
+require "bundler/setup"
+require "debug_socket"
+
+require "pry"
+Pry.start
