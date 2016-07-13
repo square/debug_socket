@@ -58,10 +58,10 @@ spec/debug_socket_spec.rb:48:in `block (4 levels) in <top (required)>'
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/square/debug_socket.
+We always welcome bug reports, on [GitHub's issue tracker](https://github.com/square/debug_socket/issues).
 
 If you would like to contribute code to DebugSocket, thank you! You can do so
-through GitHub by forking the repository and sending a pull request. However,
+through [GitHub](https://github.com/square/debug_socket) by forking the repository and sending a [pull request](https://github.com/square/debug_socket/pulls). However,
 before your code can be accepted into the project we need you to sign Square's
 (super simple) [Individual Contributor License Agreement
 (CLA)](https://spreadsheets.google.com/spreadsheet/viewform?formkey=dDViT2xzUHAwRkI3X3k5Z0lQM091OGc6MQ&ndplr=1)
