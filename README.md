@@ -2,6 +2,7 @@
 
 A unix domain socket that listens for debug commands.
 
+[![Build Status](https://travis-ci.org/square/debug_socket.svg?branch=master)](https://travis-ci.org/square/debug_socket)
 
 ## Warning
 
