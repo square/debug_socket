@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+
+if ARGV[0].nil? || ARGV[0].empty?
+  puts "\nUsage: debug-socket <socket-path>"
+  puts "Default command is backtrace\n"
+  exit 1
+end
+
+puts ""
+puts "Sending `backtrace` to the following socket: #{ARGV[0]}"
+puts "----------------------------------------------------------"
+puts ""
+Kernel.exec("echo backtrace | socat - UNIX-CONNECT:#{ARGV[0]}")
