@@ -41,10 +41,31 @@ Sidekiq.configure_server do |_config|
 end
 ```
 
-Then in a terminal:
+You can now send ruby instruction commands through the socket and they'll be
+executed in your running process.  You can use `socat` to write and read
+from the socket and dump to `stdout` like so:
 
 ```
 % echo backtrace | socat - UNIX-CONNECT:~/tmp/puma-debug-1234.sock
+2016-08-09T00:51:57Z puma: cluster worker 0: 1234
+2016-08-09T00:51:57Z pid=1234 thread.object_id=70099243629020 thread.status=run
+lib/debug_socket.rb:55:in `backtrace'
+lib/debug_socket.rb:55:in `block in backtrace'
+lib/debug_socket.rb:54:in `map'
+lib/debug_socket.rb:54:in `backtrace'
+spec/debug_socket_spec.rb:48:in `block (3 levels) in <top (required)>'
+
+2016-08-09T00:51:57Z pid=1234 thread.object_id=70121809360520 thread.status=sleep
+spec/debug_socket_spec.rb:48:in `sleep'
+spec/debug_socket_spec.rb:48:in `block (4 levels) in <top (required)>'
+```
+
+The gem also provides a helper script that wraps the above command.  The
+`debug-socket` script takes one argument, the path to the unix socket, and it
+will run the `backtrace` command through that socket.
+
+```
+% debug-socket ~/tmp/puma-debug-1234.sock
 2016-08-09T00:51:57Z puma: cluster worker 0: 1234
 2016-08-09T00:51:57Z pid=1234 thread.object_id=70099243629020 thread.status=run
 lib/debug_socket.rb:55:in `backtrace'
