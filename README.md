@@ -36,6 +36,9 @@ in `config/initializers/sidekiq.rb`
 ```ruby
 Sidekiq.configure_server do |_config|
   DebugSocket.logger = Sidekiq::Logging.logger
+  # GOTCHA: if the Rails.root.join("tmp", "sidekiq-debug-#{Process.pid}.sock")
+  # path is too long, this will fail. The max on Linux is 108 characters, MacOS
+  # is 104. If the path is too long, try using a relative path or /tmp/<blah>.
   DebugSocket.start(Rails.root.join("tmp", "sidekiq-debug-#{Process.pid}.sock"))
   at_exit { DebugSocket.stop }
 end
