@@ -1,7 +1,10 @@
+# frozen_string_literal: true
 require "debug_socket/version"
 require "socket"
 
 module DebugSocket
+  VALID_COMMANDS = %w(backtrace).freeze
+
   def self.logger=(logger)
     @logger = logger
   end
@@ -27,7 +30,12 @@ module DebugSocket
           socket = server.accept
           input = socket.read
           logger.warn("[DEBUG SOCKET] #{input.inspect}") if logger
-          socket.puts(eval(input)) # rubocop:disable Lint/Eval
+          command = input.strip
+          if VALID_COMMANDS.include?(command)
+            socket.puts(send(command))
+          else
+            socket.puts("Unsupported command: #{command.inspect}")
+          end
         rescue => e
           next unless logger
           logger.error("[DEBUG SOCKET] error=#{e.inspect}")
@@ -55,8 +63,9 @@ module DebugSocket
   def self.backtrace
     pid = Process.pid
     "#{Time.now.utc.iso8601} #{$PROGRAM_NAME}\n" + Thread.list.map do |thread|
-      output =
+      output = String.new(
         "#{Time.now.utc.iso8601} pid=#{pid} thread.object_id=#{thread.object_id} thread.status=#{thread.status}"
+      )
       backtrace = thread.backtrace || []
       output << "\n#{backtrace.join("\n")}" if backtrace
       output
