@@ -5,7 +5,7 @@ LineLength:
   Max: 128
 
 MethodLength:
-  Max: 25
+  Max: 50
 
 Encoding:
   Enabled: false
