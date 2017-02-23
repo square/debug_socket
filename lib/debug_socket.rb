@@ -1,7 +1,10 @@
 require "debug_socket/version"
 require "socket"
+require "time"
 
 module DebugSocket
+  @thread = nil
+
   def self.logger=(logger)
     @logger = logger
   end
@@ -16,7 +19,7 @@ module DebugSocket
     raise "debug socket thread already running" if @thread
 
     # make sure socket is only accessible to the process owner
-    old_mask = File.umask(0177)
+    old_mask = File.umask(0o0177)
 
     @path = path.to_s
 
@@ -26,12 +29,11 @@ module DebugSocket
         begin
           socket = server.accept
           input = socket.read
-          logger.warn("[DEBUG SOCKET] #{input.inspect}") if logger
-          socket.puts(eval(input)) # rubocop:disable Lint/Eval
-        rescue => e
+          logger.warn("debug-socket-command=#{input.inspect}") if logger
+          socket.puts(eval(input)) # rubocop:disable Security/Eval
+        rescue Exception => e # rubocop:disable Lint/RescueException
           next unless logger
-          logger.error("[DEBUG SOCKET] error=#{e.inspect}")
-          logger.error(e.backtrace)
+          logger.error("debug-socket-error=#{e.inspect} backtrace=#{e.backtrace.inspect}")
         ensure
           socket.close
         end
