@@ -13,6 +13,9 @@ Encoding:
 Metrics/AbcSize:
   Max: 50
 
+Metrics/BlockLength:
+  Enabled: false
+
 Metrics/CyclomaticComplexity:
   Max: 25
 

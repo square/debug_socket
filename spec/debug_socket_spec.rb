@@ -1,16 +1,22 @@
-require "spec_helper"
 require "logger"
 
 RSpec.describe DebugSocket do
   describe ".start/.stop" do
-    let(:path) { "boom-#{rand(0..100)}.sock" }
+    let(:path) do
+      100.times do
+        tmp = "boom-#{rand(0..100)}.sock"
+        return tmp unless File.exist?(tmp)
+      end
+      raise "Couldn't find an unused socket"
+    end
     let(:socket) do
       10.times { sleep(1) unless File.exist?(path) }
       UNIXSocket.new(path)
     end
+    let(:log_buffer) { StringIO.new }
 
     before do
-      DebugSocket.logger = Logger.new(StringIO.new)
+      DebugSocket.logger = Logger.new(log_buffer)
       DebugSocket.start(path)
     end
 
@@ -21,10 +27,10 @@ RSpec.describe DebugSocket do
     end
 
     it "logs and evals input" do
-      expect(DebugSocket.logger).to receive(:warn).with('[DEBUG SOCKET] "2 + 2"')
       socket.write("2 + 2")
       socket.close_write
       expect(socket.read).to eq("4\n")
+      expect(log_buffer.string).to include('debug-socket-command="2 + 2"')
     end
 
     it "only allows the current user to use the socket" do
@@ -40,20 +46,17 @@ RSpec.describe DebugSocket do
     end
 
     it "catches errors in the debug socket thread" do
-      allow(DebugSocket.logger).to receive(:error).and_call_original
-      expect(DebugSocket.logger).to receive(:warn).with('[DEBUG SOCKET] "1"').and_raise "boom"
-      expect(DebugSocket.logger).to receive(:error).with("[DEBUG SOCKET] error=#<RuntimeError: boom>")
-
-      socket.write("1")
+      socket.write("asdf}(]")
       socket.close_write
       expect(socket.read).to eq("")
-
-      expect(DebugSocket.logger).to receive(:warn).with('[DEBUG SOCKET] "2"')
 
       another_socket = UNIXSocket.new(path)
       another_socket.write("2")
       another_socket.close_write
       expect(another_socket.read).to eq("2\n")
+
+      expect(log_buffer.string).to include("debug-socket-error=#<SyntaxError: (eval):1: syntax error")
+      expect(log_buffer.string).to include('debug-socket-command="2"')
     end
   end
 
