@@ -40,9 +40,33 @@ RSpec.describe DebugSocket do
       expect(File.stat(path).mode.to_s(8)).to eq("140600")
     end
 
-    it "can only be started once" do
+    it "can only be started once per process" do
       expect { DebugSocket.start("another-boom.sock") }
-        .to raise_exception("debug socket thread already running")
+        .to raise_exception("debug socket thread already running for this process")
+    end
+
+    if Process.respond_to?(:fork)
+      it "can only be started once per process, including in forked children" do
+        another_path = "another-boom.sock"
+
+        if (child = fork)
+          expect { DebugSocket.start(another_path) }
+            .to raise_exception("debug socket thread already running for this process")
+
+          10.times { sleep(1) unless File.exist?(another_path) }
+          another_socket = UNIXSocket.new(another_path)
+          another_socket.write("Thread.list.each(&:wakeup)")
+          another_socket.close_write
+          expect(another_socket.read).to match(/Thread/)
+          Process.wait(child, Process::WNOHANG)
+        else
+          DebugSocket.start(another_path)
+          sleep
+          sleep(1)
+          DebugSocket.stop
+          exit!(1)
+        end
+      end
     end
 
     it "catches errors in the debug socket thread" do

@@ -4,6 +4,7 @@ require "time"
 
 module DebugSocket
   @thread = nil
+  @pid = Process.pid
 
   def self.logger=(logger)
     @logger = logger
@@ -16,7 +17,10 @@ module DebugSocket
   end
 
   def self.start(path)
-    raise "debug socket thread already running" if @thread
+    pid = Process.pid
+    raise "debug socket thread already running for this process" if @thread && @pid == pid
+
+    @pid = pid
 
     # make sure socket is only accessible to the process owner
     old_mask = File.umask(0o0177)
@@ -51,6 +55,7 @@ module DebugSocket
     @thread.kill if @thread
     File.unlink(@path) if @path && File.exist?(@path)
     @thread = nil
+    @pid = nil
     @path = nil
   end
 
