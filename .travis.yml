@@ -2,7 +2,7 @@ language: ruby
 rvm:
   - 2.3.3
   - 2.4.0
-  - jruby-9.1.7.0
+  - jruby-9.1.8.0
   - ruby-head
 matrix:
   allow_failures:
