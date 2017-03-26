@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+require 'socket'
+
+if ARGV[0].nil? || ARGV[0].empty?
+  puts "\nUsage: soterm <socket-path>"
+  puts "Provides a simple interface to interact with a debug socket"
+  exit 1
+end
+
+socket_path = ARGV[0]
+if File.ftype(socket_path) != "socket"
+  puts "#{socket_path} is not a socket"
+  exit(1)
+end
+
+loop do
+  begin
+    socket = UNIXSocket.open(socket_path)
+    print "> "
+    socket.puts STDIN.gets
+    socket.close_write
+    puts socket.readline
+  rescue Interrupt
+    puts
+    break
+  rescue EOFError
+    continue
+  ensure
+    socket.close unless socket.nil?
+  end
+end
