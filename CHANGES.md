@@ -1,3 +1,6 @@
+### 0.1.5 2017-09-07
+- Cleanup logging
+
 ### 0.1.4 2017-03-17
 - Allow forked children to open their own debug sockets
 
