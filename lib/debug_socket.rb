@@ -13,7 +13,7 @@ module DebugSocket
   def self.logger
     return @logger if defined?(@logger)
     require "logger"
-    @logger = Logger.new(STDOUT)
+    @logger = Logger.new(STDERR)
   end
 
   def self.start(path)
@@ -37,14 +37,14 @@ module DebugSocket
           socket.puts(eval(input)) # rubocop:disable Security/Eval
         rescue Exception => e # rubocop:disable Lint/RescueException
           next unless logger
-          logger.error("debug-socket-error=#{e.inspect} backtrace=#{e.backtrace.inspect}")
+          logger.error { "debug-socket-error=#{e.inspect} backtrace=#{e.backtrace.inspect}" }
         ensure
           socket.close
         end
       end
     end
 
-    logger.error("Debug socket listening on #{@path}") if logger
+    logger.unknown { "Debug socket listening on #{@path}" } if logger
 
     @thread
   ensure
