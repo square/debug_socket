@@ -1,3 +1,7 @@
+### 0.1.6 2018-09-20
+- Update rubocop
+- Check socket existence before closing
+
 ### 0.1.5 2017-09-07
 - Cleanup logging
 
