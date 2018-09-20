@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 if ARGV[0].nil? || ARGV[0].empty? || ARGV[0] == "-h" || ARGV[0] == "--help"
   puts "\nUsage: debug-socket <socket-path> [<command>=backtrace]"
