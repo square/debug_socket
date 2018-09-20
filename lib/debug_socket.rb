@@ -41,7 +41,7 @@ module DebugSocket
         rescue Exception => e # rubocop:disable Lint/RescueException
           logger&.error { "debug-socket-error=#{e.inspect} backtrace=#{e.backtrace.inspect}" }
         ensure
-          socket.close
+          socket&.close
         end
       end
     end
