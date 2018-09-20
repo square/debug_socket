@@ -106,7 +106,7 @@ RSpec.describe DebugSocket do
     end
   end
 
-  describe "stress test" do
+  describe "stress test", slow: true do
     it "works with lots of threads, even in jruby" do
       threads = Array.new(10) do
         Thread.new { 100.times { Thread.new { sleep(0.001) }.join } }
