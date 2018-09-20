@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "debug_socket/version"
 require "socket"
 require "time"
@@ -12,6 +14,7 @@ module DebugSocket
 
   def self.logger
     return @logger if defined?(@logger)
+
     require "logger"
     @logger = Logger.new(STDERR)
   end
@@ -33,18 +36,17 @@ module DebugSocket
         begin
           socket = server.accept
           input = socket.read
-          logger.warn("debug-socket-command=#{input.inspect}") if logger
+          logger&.warn("debug-socket-command=#{input.inspect}")
           socket.puts(eval(input)) # rubocop:disable Security/Eval
         rescue Exception => e # rubocop:disable Lint/RescueException
-          next unless logger
-          logger.error { "debug-socket-error=#{e.inspect} backtrace=#{e.backtrace.inspect}" }
+          logger&.error { "debug-socket-error=#{e.inspect} backtrace=#{e.backtrace.inspect}" }
         ensure
           socket.close
         end
       end
     end
 
-    logger.unknown { "Debug socket listening on #{@path}" } if logger
+    logger&.unknown { "Debug socket listening on #{@path}" }
 
     @thread
   ensure
@@ -52,7 +54,7 @@ module DebugSocket
   end
 
   def self.stop
-    @thread.kill if @thread
+    @thread&.kill
     File.unlink(@path) if @path && File.exist?(@path)
     @thread = nil
     @pid = nil
@@ -63,7 +65,7 @@ module DebugSocket
     pid = Process.pid
     "#{Time.now.utc.iso8601} #{$PROGRAM_NAME}\n" + Thread.list.map do |thread|
       output =
-        "#{Time.now.utc.iso8601} pid=#{pid} thread.object_id=#{thread.object_id} thread.status=#{thread.status}"
+        +"#{Time.now.utc.iso8601} pid=#{pid} thread.object_id=#{thread.object_id} thread.status=#{thread.status}"
       backtrace = thread.backtrace || []
       output << "\n#{backtrace.join("\n")}" if backtrace
       output

@@ -1,32 +1,15 @@
 AllCops:
+  TargetRubyVersion: 2.4
   DisplayCopNames: true
 
-LineLength:
-  Max: 128
+Style/FrozenStringLiteralComment:
+  Enabled: true
 
-MethodLength:
-  Max: 25
-
-Encoding:
-  Enabled: false
-
-Metrics/AbcSize:
-  Max: 50
-
-Metrics/BlockLength:
-  Enabled: false
-
-Metrics/CyclomaticComplexity:
-  Max: 25
-
-Metrics/PerceivedComplexity:
-  Max: 25
-
-Metrics/ParameterLists:
+Metrics:
   Enabled: false
 
 Style/Documentation:
   Enabled: false
 
 Style/StringLiterals:
-  Enabled: false
+  EnforcedStyle: double_quotes
