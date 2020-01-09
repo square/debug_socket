@@ -1,4 +1,4 @@
-### Unreleased
+### 0.1.7 20202-01-09
 
 - [#11](https://github.com/square/debug_socket/pull/11)
   Properly escape command when sent to socket.
