@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require "shellwords"
+
 if ARGV[0].nil? || ARGV[0].empty? || ARGV[0] == "-h" || ARGV[0] == "--help"
   puts "\nUsage: debug-socket <socket-path> [<command>=backtrace]"
   exit 1
@@ -12,4 +14,4 @@ command = ARGV[1] || "backtrace"
 warn "\nSending `#{command}` to the following socket: #{socket}"\
   "----------------------------------------------------------\n\n"
 
-Kernel.exec("echo #{command} | socat - UNIX-CONNECT:#{socket}")
+Kernel.exec("echo #{Shellwords.escape(command)} | socat - UNIX-CONNECT:#{socket}")
