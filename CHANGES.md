@@ -1,3 +1,9 @@
+### Unreleased
+
+- [#11](https://github.com/square/debug_socket/pull/11)
+  Properly escape command when sent to socket.
+  ([@drcapulet])
+
 ### 0.1.6 2018-09-20
 - Update rubocop
 - Check socket existence before closing
