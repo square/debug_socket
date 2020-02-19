@@ -7,4 +7,8 @@ require "rubocop/rake_task"
 RSpec::Core::RakeTask.new(:spec)
 RuboCop::RakeTask.new
 
+# enable ObjectSpace in jruby
+ENV["JRUBY_OPTS"] ||= ""
+ENV["JRUBY_OPTS"] += " --debug -X+O"
+
 task default: %i[spec rubocop]

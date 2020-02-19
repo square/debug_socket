@@ -6,7 +6,7 @@ require "time"
 
 module DebugSocket
   @thread = nil
-  @pid = Process.pid
+  @pid = nil
 
   def self.logger=(logger)
     @logger = logger
@@ -28,25 +28,52 @@ module DebugSocket
     # make sure socket is only accessible to the process owner
     old_mask = File.umask(0o0177)
 
-    @path = path.to_s
+    path = path.to_s
 
-    server = UNIXServer.new(@path)
-    @thread = Thread.new do
-      loop do
-        begin
-          socket = server.accept
+    server = UNIXServer.new(path)
+    @thread =
+      Thread.new do
+        loop do
+          accept_attempts = 0
+          socket =
+            begin
+              server.accept
+            rescue Exception => e # rubocop:disable Lint/RescueException
+              accept_attempts += 1
+              logger&.error { "debug-socket-accept-error=#{e.inspect} socket attempts=#{accept_attempts} backtrace=#{e.backtrace.inspect}" }
+              if server.closed?
+                logger&.error("debug-socket-accept-error stopping debug socket because the socket is closed")
+                break
+              end
+
+              if accept_attempts < 10
+                sleep(1)
+                retry
+              end
+
+              logger&.error("debug-socket-accept-error stopping debug socket after #{accept_attempts} failed accepts")
+              break
+            end
           input = socket.read
-          logger&.warn("debug-socket-command=#{input.inspect}")
+          logger&.unknown("debug-socket-command=#{input.inspect}")
           socket.puts(eval(input)) # rubocop:disable Security/Eval
         rescue Exception => e # rubocop:disable Lint/RescueException
           logger&.error { "debug-socket-error=#{e.inspect} backtrace=#{e.backtrace.inspect}" }
         ensure
           socket&.close
         end
+      ensure
+        logger&.info("debug socket shutting down path=#{path.inspect}")
+        if File.exist?(path)
+          File.unlink(path)
+        else
+          logger&.warn("the unix socket is missing, still shutting down")
+        end
+        @thread = nil
+        @pid = nil
       end
-    end
 
-    logger&.unknown { "Debug socket listening on #{@path}" }
+    logger&.unknown { "Debug socket listening on #{path}" }
 
     @thread
   ensure
@@ -55,10 +82,8 @@ module DebugSocket
 
   def self.stop
     @thread&.kill
-    File.unlink(@path) if @path && File.exist?(@path)
     @thread = nil
     @pid = nil
-    @path = nil
   end
 
   def self.backtrace
