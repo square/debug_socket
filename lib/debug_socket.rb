@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "debug_socket/version"
+require "fileutils"
 require "socket"
 require "time"
 
@@ -29,6 +30,10 @@ module DebugSocket
     old_mask = File.umask(0o0177)
 
     @path = path.to_s
+
+    # Sometimes orphaned sockets are left, so we need to remove them to avoid
+    # Errno::EADDRINUSE errors when calling UNIXServer.new
+    FileUtils.rm_f(@path)
 
     server = UNIXServer.new(@path)
     @thread = Thread.new do

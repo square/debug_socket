@@ -1,4 +1,8 @@
-### 0.1.7 20202-01-09
+### Unreleased
+- [#14](https://github.com/square/debug_socket/pull/14)
+  Delete socket if it already exists to account for orphaned sockets.
+
+### 0.1.7 2020-01-09
 
 - [#11](https://github.com/square/debug_socket/pull/11)
   Properly escape command when sent to socket.

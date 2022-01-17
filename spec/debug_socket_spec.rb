@@ -47,6 +47,20 @@ RSpec.describe DebugSocket do
         .to raise_exception("debug socket thread already running for this process")
     end
 
+    context "when the socket already exists" do
+      before do
+        DebugSocket.stop
+        UNIXServer.new(path).close
+      end
+
+      it "still starts successfully" do
+        DebugSocket.start(path)
+        socket.write("1 + 2")
+        socket.close_write
+        expect(socket.read).to eq("3\n")
+      end
+    end
+
     if Process.respond_to?(:fork)
       it "can only be started once per process, including in forked children" do
         another_path = "another-boom.sock"
