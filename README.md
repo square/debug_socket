@@ -63,9 +63,9 @@ spec/debug_socket_spec.rb:48:in `sleep'
 spec/debug_socket_spec.rb:48:in `block (4 levels) in <top (required)>'
 ```
 
-The gem also provides a helper script that wraps the above command.  The
-`debug-socket` script takes one argument, the path to the unix socket, and it
-will run the `backtrace` command through that socket.
+The gem also provides a script.  The `debug-socket` script takes one argument,
+the path to the unix socket, and it will run the `backtrace` command through
+that socket.
 
 ```
 % debug-socket ~/tmp/puma-debug-1234.sock
