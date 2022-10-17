@@ -1,4 +1,9 @@
-### 0.1.7 20202-01-09
+### 0.1.8 2022-10-10
+
+- [#15](https://github.com/square/debug_socket/pull/15)
+  Remove socat dependency in debug-socket script.
+
+### 0.1.7 2020-01-09
 
 - [#11](https://github.com/square/debug_socket/pull/11)
   Properly escape command when sent to socket.
