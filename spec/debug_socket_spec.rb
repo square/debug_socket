@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "logger"
-
 RSpec.describe DebugSocket do
   describe ".start/.stop" do
     let(:path) do
@@ -11,24 +9,23 @@ RSpec.describe DebugSocket do
       end
       raise "Couldn't find an unused socket"
     end
-    let(:socket) do
-      10.times { sleep(1) unless File.exist?(path) }
-      UNIXSocket.new(path)
-    end
     let(:log_buffer) { StringIO.new }
 
     before do
       DebugSocket.logger = Logger.new(log_buffer)
       DebugSocket.start(path)
+      20.times { sleep(0.1) unless File.exist?(path) }
     end
 
     after do
       DebugSocket.stop
-      10.times { sleep(1) if File.exist?(path) }
+      20.times { sleep(0.1) if File.exist?(path) }
+      puts log_buffer.string
       raise "did not cleanup socket file" if File.exist?(path)
     end
 
     it "logs and evals input" do
+      socket = UNIXSocket.new(path)
       socket.write("2 + 2")
       socket.close_write
       expect(socket.read).to eq("4\n")
@@ -55,23 +52,47 @@ RSpec.describe DebugSocket do
           expect { DebugSocket.start(another_path) }
             .to raise_exception("debug socket thread already running for this process")
 
-          10.times { sleep(1) unless File.exist?(another_path) }
+          20.times { sleep(0.1) unless File.exist?(another_path) }
+          # make sure the child was able to start DebugSocket
           another_socket = UNIXSocket.new(another_path)
-          another_socket.write("Thread.list.each(&:wakeup)")
+          another_socket.write("2 + 2")
           another_socket.close_write
-          expect(another_socket.read).to match(/Thread/)
-          Process.wait(child, Process::WNOHANG)
+          expect(another_socket.read).to eq("4\n")
+          Process.wait(child)
         else
-          DebugSocket.start(another_path)
-          sleep
-          sleep(1)
-          DebugSocket.stop
-          exit!(1)
+          begin
+            DebugSocket.logger = Logger.new(STDERR)
+            DebugSocket.start(another_path)
+            sleep(1)
+            DebugSocket.stop
+          ensure
+            File.unlink(another_path) if File.exist?(another_path)
+            exit!
+          end
+        end
+      end
+
+      it "only cleans up it's own socket in a child process" do
+        if (child = fork)
+          sleep(0.1)
+          Process.wait(child)
+          socket = UNIXSocket.new(path)
+          socket.write("2 + 2")
+          socket.close_write
+          expect(socket.read).to eq("4\n")
+          expect(log_buffer.string).to include('debug-socket-command="2 + 2"')
+        else
+          begin
+            DebugSocket.stop
+          ensure
+            exit!
+          end
         end
       end
     end
 
     it "catches errors in the debug socket thread" do
+      socket = UNIXSocket.new(path)
       socket.write("asdf}(]")
       socket.close_write
       expect(socket.read).to eq("")
@@ -84,13 +105,23 @@ RSpec.describe DebugSocket do
       expect(log_buffer.string).to include("debug-socket-error=#<SyntaxError: (eval):1: syntax error")
       expect(log_buffer.string).to include('debug-socket-command="2"')
     end
+
+    it "catches accept errors and stop debug socket" do
+      ObjectSpace.each_object(UNIXServer).each(&:close)
+      begin
+        UNIXSocket.new(path)
+        raise "expected an exception, but no exception was raised"
+      rescue IOError, Errno::ENOENT # rubocop:disable Lint/HandleExceptions
+      end
+      expect(log_buffer.string).to include("debug-socket-accept-error")
+    end
   end
 
   describe ".backtrace" do
     it "returns a stacktrace for all threads" do
       time_pid = "\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\dZ\\ pid=#{Process.pid}"
       running_thread = %r{#{time_pid}\ thread\.object_id=#{Thread.current.object_id}\ thread\.status=run\n
-        .*lib/debug_socket\.rb:\d+:in\ `backtrace'\n
+        .*lib/debug_socket\.rb:\d+:in\ `(block\ in\ )?backtrace'\n # jruby adds the "block in" part
         .*lib/debug_socket\.rb:\d+:in\ `block\ in\ backtrace'\n
         .*lib/debug_socket\.rb:\d+:in\ `map'\n
         .*lib/debug_socket\.rb:\d+:in\ `backtrace'\n
@@ -98,7 +129,7 @@ RSpec.describe DebugSocket do
       thread = Thread.new { sleep 1 }
       sleep 0.1
       sleeping_thread = %r{#{time_pid}\ thread\.object_id=#{thread.object_id}\ thread\.status=sleep\n
-        .*spec/debug_socket_spec\.rb:\d+:in\ `sleep'\n
+        .*spec/debug_socket_spec\.rb:\d+:in\ `(block\ in\ )?sleep'\n # jruby adds the "block in" part
         .*spec/debug_socket_spec\.rb:\d+:in\ `block.*'}x
       bt = DebugSocket.backtrace
       expect(bt).to match(running_thread)
