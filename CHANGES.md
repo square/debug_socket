@@ -1,3 +1,9 @@
+### 0.2.0 2025-04-03
+
+- [#16](https://github.com/square/debug_socket/pull/16)
+  Allow external auditing of debug sessions.
+  (dogor@)
+
 ### 0.1.8 2022-10-10
 
 - [#15](https://github.com/square/debug_socket/pull/15)

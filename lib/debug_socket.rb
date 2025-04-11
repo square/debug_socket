@@ -19,7 +19,7 @@ module DebugSocket
     @logger = Logger.new(STDERR)
   end
 
-  def self.start(path)
+  def self.start(path, &block)
     pid = Process.pid
     raise "debug socket thread already running for this process" if @thread && @pid == pid
 
@@ -37,9 +37,13 @@ module DebugSocket
           socket = server.accept
           input = socket.read
           logger&.warn("debug-socket-command=#{input.inspect}")
+
+          self.perform_audit(input, &block) if block_given?
+
           socket.puts(eval(input)) # rubocop:disable Security/Eval
+
         rescue Exception => e # rubocop:disable Lint/RescueException
-          logger&.error { "debug-socket-error=#{e.inspect} backtrace=#{e.backtrace.inspect}" }
+          logger&.error { "debug-socket-error=#{e.inspect} backtrace=#{e.backtrace.inspect} socket_path=#{path}" }
         ensure
           socket&.close
         end
@@ -70,5 +74,14 @@ module DebugSocket
       output << "\n#{backtrace.join("\n")}" if backtrace
       output
     end.join("\n\n")
+  end
+
+  # Allow debug socket input commands to be audited by an external callback
+  private_class_method def self.perform_audit(input, &block)
+    if block_given?
+      yield @path, input
+    end
+  rescue Exception => e
+    logger&.warn "debug-socket-warn=callback unsuccessful: #{e.inspect} for #{input.inspect}"
   end
 end
