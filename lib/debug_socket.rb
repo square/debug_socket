@@ -38,12 +38,12 @@ module DebugSocket
           input = socket.read
           logger&.warn("debug-socket-command=#{input.inspect}")
 
-          self.perform_audit(input, &block) if block_given?
+          self.perform_audit(input, &block) if block
 
           socket.puts(eval(input)) # rubocop:disable Security/Eval
 
         rescue Exception => e # rubocop:disable Lint/RescueException
-          logger&.error { "debug-socket-error=#{e.inspect} backtrace=#{e.backtrace.inspect} socket_path=#{path}" }
+          logger&.error { "debug-socket-error=#{e.inspect} backtrace=#{e.backtrace.inspect}" }
         ensure
           socket&.close
         end
@@ -78,10 +78,8 @@ module DebugSocket
 
   # Allow debug socket input commands to be audited by an external callback
   private_class_method def self.perform_audit(input, &block)
-    if block_given?
-      yield @path, input
-    end
+    yield @path, input
   rescue Exception => e
-    logger&.warn "debug-socket-warn=callback unsuccessful: #{e.inspect} for #{input.inspect}"
+    logger&.error "debug-socket-error=callback unsuccessful: #{e.inspect} for #{input.inspect} socket_path=#{@path}"
   end
 end

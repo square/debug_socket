@@ -111,7 +111,7 @@ RSpec.describe DebugSocket do
         socket.close_write
         expect(socket.read).to eq("6\n")
         # No error should be raised to the client, and the command is processed
-        expect(log_buffer.string).to include('debug-socket-warn=callback unsuccessful: #<RuntimeError: audit error> for "3 + 3"')
+        expect(log_buffer.string).to include('debug-socket-error=callback unsuccessful: #<RuntimeError: audit error> for "3 + 3" socket_path=' + path)
       end
     end
   end
