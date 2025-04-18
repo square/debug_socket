@@ -78,7 +78,7 @@ module DebugSocket
 
   # Allow debug socket input commands to be audited by an external callback
   private_class_method def self.perform_audit(input)
-    yield @path, input
+    yield input
   rescue Exception => e
     logger&.error "debug-socket-error=callback unsuccessful: #{e.inspect} for #{input.inspect} socket_path=#{@path}"
   end

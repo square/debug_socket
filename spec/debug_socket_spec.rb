@@ -92,14 +92,14 @@ RSpec.describe DebugSocket do
 
       it "calls the audit proc with the input" do
         audit_calls = []
-        audit_proc = proc { |path, input| audit_calls << [path, input] }
+        audit_proc = proc { |input| audit_calls << input }
 
         DebugSocket.start(path, &audit_proc)
 
         socket.write("2 + 2")
         socket.close_write
         expect(socket.read).to eq("4\n")
-        expect(audit_calls).to eq([[path, "2 + 2"]])
+        expect(audit_calls).to eq(["2 + 2"])
       end
 
       it "does not raise if the audit proc raises, and still processes the command" do
@@ -111,7 +111,7 @@ RSpec.describe DebugSocket do
         socket.close_write
         expect(socket.read).to eq("6\n")
         # No error should be raised to the client, and the command is processed
-        expect(log_buffer.string).to include('debug-socket-error=callback unsuccessful: #<RuntimeError: audit error> for "3 + 3" socket_path=' + path)
+        expect(log_buffer.string).to include('debug-socket-error=callback unsuccessful: #<RuntimeError: audit error> for "3 + 3"')
       end
     end
   end
