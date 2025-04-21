@@ -1,4 +1,4 @@
-### 0.2.0 2025-04-03
+### 0.1.9 2025-04-03
 
 - [#16](https://github.com/square/debug_socket/pull/16)
   Allow external auditing of debug sessions.
