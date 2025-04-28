@@ -1,8 +1,14 @@
 ### 0.1.9 2025-04-03
 
+- [#17](https://github.com/square/debug_socket/pull/17)
+  Refactor error handling. Previously all errors (including `eval` errors) were caught in the same `rescue Exception`.
+  Now, we only `rescue Exception` for `eval` errors. For `DebugSocket` errors, we only `rescue StandardError` and we
+  allow 20 consecutive errors before `DebugSocket` gives up and dies permanently.
+  (@nerdrew)
+
 - [#16](https://github.com/square/debug_socket/pull/16)
   Allow external auditing of debug sessions.
-  (dogor@)
+  (@doctown)
 
 ### 0.1.8 2022-10-10
 
