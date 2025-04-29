@@ -12,8 +12,10 @@ end
 socket_path = ARGV[0]
 command = ARGV[1] || "backtrace"
 
-warn "\nSending `#{command}` to the following socket: #{socket_path}"\
+warn(
+  "\nSending `#{command}` to the following socket: #{socket_path}" \
   "----------------------------------------------------------\n\n"
+)
 
 UNIXSocket.open(socket_path) do |socket|
   socket.write(command)

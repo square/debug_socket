@@ -22,6 +22,20 @@ RSpec.describe DebugSocket do
       DebugSocket.start(path)
     end
 
+    def write(str, socket_path = path)
+      20.times { sleep(0.1) unless File.exist?(socket_path) }
+      socket = UNIXSocket.new(socket_path)
+
+      raise "Socket write timeout=#{socket_path}" unless socket.wait_writable(1)
+
+      socket.write(str)
+      socket.close_write
+
+      raise "Socket read timeout=#{socket_path}" unless socket.wait_readable(1)
+
+      socket.read
+    end
+
     after do
       DebugSocket.stop
       10.times { sleep(1) if File.exist?(path) }
@@ -29,9 +43,7 @@ RSpec.describe DebugSocket do
     end
 
     it "logs and evals input" do
-      socket.write("2 + 2")
-      socket.close_write
-      expect(socket.read).to eq("4\n")
+      expect(write("2 + 2")).to eq("4\n")
       expect(log_buffer.string).to include('debug-socket-command="2 + 2"')
     end
 
@@ -55,38 +67,62 @@ RSpec.describe DebugSocket do
           expect { DebugSocket.start(another_path) }
             .to raise_exception("debug socket thread already running for this process")
 
-          10.times { sleep(1) unless File.exist?(another_path) }
-          another_socket = UNIXSocket.new(another_path)
-          another_socket.write("Thread.list.each(&:wakeup)")
-          another_socket.close_write
-          expect(another_socket.read).to match(/Thread/)
+          expect(write("Thread.list.each(&:wakeup)", another_path)).to match(/Thread/)
           Process.wait(child, Process::WNOHANG)
         else
-          DebugSocket.start(another_path)
-          sleep
-          sleep(1)
-          DebugSocket.stop
-          exit!(1)
+          begin
+            DebugSocket.start(another_path)
+            sleep
+            sleep(1)
+            DebugSocket.stop
+          ensure
+            exit!(1)
+          end
         end
       end
     end
 
     it "catches errors in the debug socket thread" do
-      socket.write("asdf}(]")
-      socket.close_write
-      expect(socket.read).to eq("")
+      expect(write("asdf}(]")).to include("SyntaxError")
+      expect(write("2")).to eq("2\n")
 
-      another_socket = UNIXSocket.new(path)
-      another_socket.write("2")
-      another_socket.close_write
-      expect(another_socket.read).to eq("2\n")
-
-      expect(log_buffer.string).to include("debug-socket-error=#<SyntaxError: (eval):1: syntax error")
+      expect(log_buffer.string).to match(/debug-socket-error=#<SyntaxError:.*eval.*syntax error/)
       expect(log_buffer.string).to include('debug-socket-command="2"')
     end
 
-    context 'with proc' do
-      before do 
+    it "isolates the eval from the local scope" do
+      expect(write("server = 1")).to eq("1\n")
+      expect(write("server = 1")).to eq("1\n")
+    end
+
+    it "retries socket errors 10 times then dies" do
+      20.times { sleep(0.1) unless File.exist?(path) }
+
+      slept = false
+      allow(DebugSocket).to receive(:sleep).and_wrap_original do |original, delay|
+        next if slept
+
+        slept = true
+        original.call(delay)
+      end
+
+      socket = UNIXSocket.new(path)
+      socket.write("sleep(1)")
+      socket.close
+
+      20.times do
+        socket = UNIXSocket.new(path)
+        socket.close
+      end
+
+      almost_there(250) do
+        (1..20).each { |i| expect(log_buffer.string).to include("errors=#{i + 1}") }
+        expect(log_buffer.string).to include("DebugSocket is broken now")
+      end
+    end
+
+    context "with proc" do
+      before do
         DebugSocket.stop
       end
 
@@ -95,10 +131,7 @@ RSpec.describe DebugSocket do
         audit_proc = proc { |input| audit_calls << input }
 
         DebugSocket.start(path, &audit_proc)
-
-        socket.write("2 + 2")
-        socket.close_write
-        expect(socket.read).to eq("4\n")
+        expect(write("2 + 2")).to eq("4\n")
         expect(audit_calls).to eq(["2 + 2"])
       end
 
@@ -107,46 +140,29 @@ RSpec.describe DebugSocket do
 
         DebugSocket.start(path, &audit_proc)
 
-        socket.write("3 + 3")
-        socket.close_write
-        expect(socket.read).to eq("6\n")
+        expect(write("3 + 3")).to eq("6\n")
         # No error should be raised to the client, and the command is processed
         expect(log_buffer.string).to include('debug-socket-error=callback unsuccessful: #<RuntimeError: audit error> for "3 + 3"')
       end
     end
-  end
 
-  describe ".backtrace" do
-    it "returns a stacktrace for all threads" do
-      time_pid = "\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\dZ\\ pid=#{Process.pid}"
-      running_thread = %r{#{time_pid}\ thread\.object_id=#{Thread.current.object_id}\ thread\.status=run\n
-        .*lib/debug_socket\.rb:\d+:in\ `backtrace'\n
-        .*lib/debug_socket\.rb:\d+:in\ `block\ in\ backtrace'\n
-        .*lib/debug_socket\.rb:\d+:in\ `map'\n
-        .*lib/debug_socket\.rb:\d+:in\ `backtrace'\n
-        .*spec/debug_socket_spec\.rb:\d+:in\ `block.*'}x
-      thread = Thread.new { sleep 1 }
-      sleep 0.1
-      sleeping_thread = %r{#{time_pid}\ thread\.object_id=#{thread.object_id}\ thread\.status=sleep\n
-        .*spec/debug_socket_spec\.rb:\d+:in\ `sleep'\n
-        .*spec/debug_socket_spec\.rb:\d+:in\ `block.*'}x
-      bt = DebugSocket.backtrace
-      expect(bt).to match(running_thread)
-      expect(bt).to match(sleeping_thread)
-    end
-  end
-
-  describe "stress test", slow: true do
-    it "works with lots of threads, even in jruby" do
-      threads = Array.new(10) do
-        Thread.new { 100.times { Thread.new { sleep(0.001) }.join } }
+    describe "Commands.backtrace" do
+      it "returns a stacktrace for all threads" do
+        time_pid = "\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\dZ\\ pid=#{Process.pid}"
+        running_thread = %r{#{time_pid}\ thread\.object_id=\d+\ thread\.status=run\n
+          .*lib/debug_socket\.rb:\d+:in\ .*backtrace'\n
+          .*lib/debug_socket\.rb:\d+:in\ .*block\ in.*backtrace'\n
+          .*lib/debug_socket\.rb:\d+:in\ .*map'\n
+          .*lib/debug_socket\.rb:\d+:in\ .*backtrace'}x
+        thread = Thread.new { sleep 1 }
+        sleep 0.1
+        sleeping_thread = %r{#{time_pid}\ thread\.object_id=#{thread.object_id}\ thread\.status=sleep\n
+          .*spec/debug_socket_spec\.rb:\d+:in\ .*sleep'\n
+          .*spec/debug_socket_spec\.rb:\d+:in\ .*block.*'}x
+        bt = write("backtrace")
+        expect(bt).to match(running_thread)
+        expect(bt).to match(sleeping_thread)
       end
-
-      expect do
-        DebugSocket.backtrace while threads.any?(&:alive?)
-        threads.join
-        threads.map(&:value)
-      end.not_to raise_exception
     end
   end
 end

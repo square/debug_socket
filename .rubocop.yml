@@ -1,15 +1,25 @@
 AllCops:
-  TargetRubyVersion: 2.4
+  TargetRubyVersion: 3.1
   DisplayCopNames: true
+  NewCops: enable
 
-Style/FrozenStringLiteralComment:
-  Enabled: true
+plugins:
+  - rubocop-rake
+  - rubocop-rspec
 
+Layout/LineLength:
+  Enabled: false
 Metrics:
   Enabled: false
-
+RSpec/DescribedClass:
+  Enabled: false
+RSpec/ExampleLength:
+  Enabled: false
+RSpec/MultipleExpectations:
+  Enabled: false
 Style/Documentation:
   Enabled: false
-
+Style/FrozenStringLiteralComment:
+  Enabled: true
 Style/StringLiterals:
   EnforcedStyle: double_quotes

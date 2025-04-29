@@ -5,7 +5,13 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in debug_socket.gemspec
 gemspec
 
-gem "pry"
+gem "base64"
+gem "ostruct"
+gem "pry-byebug"
 gem "rake"
 gem "rspec", "~> 3.8"
-gem "rubocop", "0.59.1"
+gem "rubocop", "1.73.1"
+gem "rubocop-rake"
+gem "rubocop-rspec"
+gem "ruby-lsp", require: false
+gem "syntax_tree", require: false
