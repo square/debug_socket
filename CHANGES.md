@@ -1,3 +1,8 @@
+### 0.1.10 2025-09-05
+
+- #18
+  Use log level `warn` instead of `unknown` for logging the socket path. (@mdayaram)
+
 ### 0.1.9 2025-04-03
 
 - [#17](https://github.com/square/debug_socket/pull/17)

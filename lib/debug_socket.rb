@@ -79,7 +79,7 @@ module DebugSocket
       logger&.error { "debug-socket-error=#{e.inspect} DebugSocket is broken now path=#{@path} backtrace=#{e.backtrace.inspect}" }
     end
 
-    logger&.unknown { "Debug socket listening on #{@path}" }
+    logger&.warn { "Debug socket listening on #{@path}" }
 
     @thread
   ensure
