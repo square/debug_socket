@@ -95,6 +95,15 @@ RSpec.describe DebugSocket do
       expect(write("server = 1")).to eq("1\n")
     end
 
+    it "does not allow modifying the input" do
+      cmd = <<~RUBY
+        input.define_singleton_method(:inspect) { raise "boom" }
+        raise "foo"
+      RUBY
+      expect(write(cmd)).to include("RuntimeError: foo")
+      expect(log_buffer.string).to include(cmd.inspect)
+    end
+
     it "retries socket errors 10 times then dies" do
       20.times { sleep(0.1) unless File.exist?(path) }
 

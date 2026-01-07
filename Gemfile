@@ -6,9 +6,11 @@ source "https://rubygems.org"
 gemspec
 
 gem "base64"
+gem "irb"
 gem "ostruct"
 gem "pry-byebug"
 gem "rake"
+gem "reline"
 gem "rspec", "~> 3.8"
 gem "rubocop", "1.73.1"
 gem "rubocop-rake"

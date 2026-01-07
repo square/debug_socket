@@ -1,7 +1,14 @@
+### 0.1.11 2026-01-07
+
+- [#19](https://github.com/square/debug_socket/pull/19)
+  `dup` the `input` before `eval`-ing it so any modifications of `input` do not impact logging.
+  (@nerdrew)
+
 ### 0.1.10 2025-09-05
 
-- #18
-  Use log level `warn` instead of `unknown` for logging the socket path. (@mdayaram)
+- [#18](https://github.com/square/debug_socket/pull/18)
+  Use log level `warn` instead of `unknown` for logging the socket path.
+  (@mdayaram)
 
 ### 0.1.9 2025-04-03
 
