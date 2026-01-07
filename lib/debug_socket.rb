@@ -11,10 +11,6 @@ module DebugSocket
     # to run.
     def self.isolated_eval(input)
       eval(input) # rubocop:disable Security/Eval
-    # We rescue Exception here because the input could have SyntaxErrors etc.
-    rescue Exception => e # rubocop:disable Lint/RescueException
-      DebugSocket.logger&.error { "debug-socket-error=#{e.inspect} input=#{input.inspect} path=#{@path} backtrace=#{e.backtrace.inspect}" }
-      "#{e.class.name}: #{e.message}\n#{e.backtrace.join("\n")}"
     end
 
     # Print the backtrace for every Thread
@@ -63,7 +59,15 @@ module DebugSocket
         logger&.warn("debug-socket-command=#{input.inspect}")
 
         perform_audit(input, &block) if block
-        socket.puts(Commands.isolated_eval(input))
+        output =
+          begin
+            Commands.isolated_eval(input.dup)
+          # We rescue Exception here because the input could have SyntaxErrors etc.
+          rescue Exception => e # rubocop:disable Lint/RescueException
+            logger&.error { "debug-socket-error=#{e.inspect} input=#{input.inspect} path=#{@path} backtrace=#{e.backtrace.inspect}" }
+            "#{e.class.name}: #{e.message}\n#{e.backtrace.join("\n")}"
+          end
+        socket.puts(output)
 
         errors = 0
       rescue StandardError => e
